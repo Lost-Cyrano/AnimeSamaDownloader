@@ -1,43 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Proxy Anim Sama</title>
+    <title>Proxy CORS</title>
     <script>
-        // CSS d'Anim Sama extrait de votre exemple
-        const animSamaStyles = `
-            /* Styles extraits d'Anim Sama */
-            body {
-                background-color: #1a1a1a;
-                color: #ffffff;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }
-            .container {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 20px;
-            }
-            .chapter-images img {
-                width: 100%;
-                height: auto;
-                margin: 10px 0;
-                border-radius: 5px;
-            }
-            /* Ajoutez ici d'autres styles spécifiques d'Anim Sama */
-        `;
-
-        async function fetchPage(url) {
+        async function fetchWithProxy(url) {
             try {
-                const proxies = [
+                // Utiliser un service proxy public comme fallback
+                const proxyServices = [
                     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
                     `https://corsproxy.io/?${encodeURIComponent(url)}`,
                     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
                 ];
                 
-                for (const proxyUrl of proxies) {
+                for (const proxyUrl of proxyServices) {
                     try {
                         const response = await fetch(proxyUrl);
                         if (response.ok) {
-                            return await response.text();
+                            const html = await response.text();
+                            return html;
                         }
                     } catch (e) {
                         continue;
@@ -49,15 +29,13 @@
             }
         }
 
+        // Écouter les messages de TurboWarp
         window.addEventListener('message', async (event) => {
             if (event.data.type === 'FETCH_HTML') {
-                const html = await fetchPage(event.data.url);
-                // Injecter le CSS d'Anim Sama dans la réponse
-                const processedHtml = html.replace('</head>', `<style>${animSamaStyles}</style></head>`);
-                
+                const html = await fetchWithProxy(event.data.url);
                 event.source.postMessage({
                     type: 'HTML_RESPONSE',
-                    content: processedHtml,
+                    content: html,
                     requestId: event.data.requestId
                 }, event.origin);
             }
@@ -65,6 +43,6 @@
     </script>
 </head>
 <body>
-    <!-- Proxy pour Anim Sama -->
+    <!-- Page proxy pour contourner CORS -->
 </body>
 </html>
