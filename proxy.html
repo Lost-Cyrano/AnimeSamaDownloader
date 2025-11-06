@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Proxy CORS</title>
+    <script>
+        async function fetchWithProxy(url) {
+            try {
+                // Utiliser un service proxy public comme fallback
+                const proxyServices = [
+                    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+                ];
+                
+                for (const proxyUrl of proxyServices) {
+                    try {
+                        const response = await fetch(proxyUrl);
+                        if (response.ok) {
+                            const html = await response.text();
+                            return html;
+                        }
+                    } catch (e) {
+                        continue;
+                    }
+                }
+                throw new Error('Tous les proxies ont échoué');
+            } catch (error) {
+                return `Erreur: ${error.message}`;
+            }
+        }
+
+        // Écouter les messages de TurboWarp
+        window.addEventListener('message', async (event) => {
+            if (event.data.type === 'FETCH_HTML') {
+                const html = await fetchWithProxy(event.data.url);
+                event.source.postMessage({
+                    type: 'HTML_RESPONSE',
+                    content: html,
+                    requestId: event.data.requestId
+                }, event.origin);
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- Page proxy pour contourner CORS -->
+</body>
+</html>
