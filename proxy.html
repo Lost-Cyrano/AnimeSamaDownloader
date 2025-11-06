@@ -3,46 +3,72 @@
 <head>
     <title>Proxy CORS</title>
     <script>
-        async function fetchWithProxy(url) {
-            try {
-                // Utiliser un service proxy public comme fallback
-                const proxyServices = [
-                    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-                    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-                    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
-                ];
-                
-                for (const proxyUrl of proxyServices) {
-                    try {
-                        const response = await fetch(proxyUrl);
-                        if (response.ok) {
-                            const html = await response.text();
+        async function fetchWithProxies(url) {
+            // Liste de proxies publics
+            const proxies = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+                `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(url)}`
+            ];
+            
+            for (const proxyUrl of proxies) {
+                try {
+                    console.log('Essai proxy:', proxyUrl);
+                    const response = await fetch(proxyUrl, {
+                        method: 'GET',
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const html = await response.text();
+                        if (html && html.length > 1000) {
+                            console.log('Succès avec:', proxyUrl);
                             return html;
                         }
-                    } catch (e) {
-                        continue;
                     }
+                } catch (error) {
+                    console.log('Échec proxy:', error);
+                    continue;
                 }
-                throw new Error('Tous les proxies ont échoué');
-            } catch (error) {
-                return `Erreur: ${error.message}`;
             }
+            throw new Error('Tous les proxies ont échoué');
         }
 
-        // Écouter les messages de TurboWarp
+        // Écouter les messages
         window.addEventListener('message', async (event) => {
             if (event.data.type === 'FETCH_HTML') {
-                const html = await fetchWithProxy(event.data.url);
-                event.source.postMessage({
-                    type: 'HTML_RESPONSE',
-                    content: html,
-                    requestId: event.data.requestId
-                }, event.origin);
+                try {
+                    const html = await fetchWithProxies(event.data.url);
+                    event.source.postMessage({
+                        type: 'HTML_RESPONSE',
+                        content: html
+                    }, event.origin);
+                } catch (error) {
+                    event.source.postMessage({
+                        type: 'HTML_RESPONSE',
+                        content: `Erreur: ${error.message}`
+                    }, event.origin);
+                }
             }
+        });
+
+        // Confirmation de chargement
+        window.addEventListener('load', () => {
+            console.log('✅ Proxy GitHub chargé et prêt');
         });
     </script>
 </head>
 <body>
-    <!-- Page proxy pour contourner CORS -->
+    <h1>Proxy CORS AnimeSama</h1>
+    <p>Ce proxy permet de contourner les restrictions CORS pour télécharger les pages AnimeSama.</p>
+    <p>Statut: <span id="status">🟢 Actif</span></p>
+    
+    <script>
+        document.getElementById('status').textContent = '🟢 Actif et prêt';
+    </script>
 </body>
 </html>
